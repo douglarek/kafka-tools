@@ -1,0 +1,32 @@
+name: "tagged-release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  tagged-release:
+    name: "Tagged Release"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v2
+      - name: Set output
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - uses: addnab/docker-run-action@v3
+        with:
+          registry: gcr.io
+          image: douglarek/centos7-golang:latest
+          options: -v ${{ github.workspace }}:/work -w /work
+          run: |
+            go build -o kafka-replay-centos7-${{ steps.vars.outputs.tag }} cmd/replay/main.go
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            kafka-replay*
