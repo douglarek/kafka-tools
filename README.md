@@ -1,4 +1,4 @@
-# kafka-tools
+# kafka-tools [![Go](https://github.com/douglarek/kafka-tools/actions/workflows/go.yml/badge.svg)](https://github.com/douglarek/kafka-tools/actions/workflows/go.yml)
 
 ## Consume kafka topic(s)
 
