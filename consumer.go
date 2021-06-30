@@ -15,15 +15,7 @@ type ReplayConsumer struct {
 	partitionNum int
 }
 
-func NewReplayConsumer(brokers, topic string, start, end time.Time) *ReplayConsumer {
-	config := &kafka.ConfigMap{
-		"metadata.broker.list":            brokers,
-		"group.id":                        "bigdata-replay-consumer",
-		"go.application.rebalance.enable": true,
-		"go.events.channel.enable":        true,
-		"enable.partition.eof":            true,
-	}
-
+func newReplayConsumer(brokers, topic string, start, end time.Time, config *kafka.ConfigMap) *ReplayConsumer {
 	c, err := kafka.NewConsumer(config)
 	if err != nil {
 		panic(err)
@@ -39,6 +31,34 @@ func NewReplayConsumer(brokers, topic string, start, end time.Time) *ReplayConsu
 		start: start,
 		end:   end,
 	}
+}
+
+func NewReplayConsumer(brokers, topic string, start, end time.Time) *ReplayConsumer {
+	config := &kafka.ConfigMap{
+		"metadata.broker.list":            brokers,
+		"group.id":                        "bigdata-replay-consumer",
+		"go.application.rebalance.enable": true,
+		"go.events.channel.enable":        true,
+		"enable.partition.eof":            true,
+	}
+
+	return newReplayConsumer(brokers, topic, start, end, config)
+}
+
+func NewSASLReplayConsumer(brokers, topic string, start, end time.Time, saslProtocol, saslMechanism, saslUser, saslPass string) *ReplayConsumer {
+	config := &kafka.ConfigMap{
+		"metadata.broker.list":            brokers,
+		"group.id":                        "bigdata-replay-consumer",
+		"go.application.rebalance.enable": true,
+		"go.events.channel.enable":        true,
+		"enable.partition.eof":            true,
+		"security.protocol":               saslProtocol,
+		"sasl.mechanism":                  saslMechanism,
+		"sasl.username":                   saslUser,
+		"sasl.password":                   saslPass,
+	}
+
+	return newReplayConsumer(brokers, topic, start, end, config)
 }
 
 func (consumer *ReplayConsumer) offsetsForTimes(partitions []kafka.TopicPartition, timestamp int64) ([]kafka.TopicPartition, error) {

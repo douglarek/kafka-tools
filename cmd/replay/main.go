@@ -14,6 +14,10 @@ var (
 	topic            = flag.String("topic", "", "kafka topics to consumer, multiple divided by the comma")
 	startTime        = flag.String("start", "", "start consumer time, format: 20060102150405")
 	endTime          = flag.String("end", "", "end consumer time, format: 20060102150405")
+	saslProtocol     = flag.String("security.protocol", "sasl_plaintext", "security.protocol")
+	saslMechanism    = flag.String("sasl.mechanism", "PLAIN", "sasl.mechanism")
+	saslUser         = flag.String("sasl.username", "", "sasl.username")
+	saslPass         = flag.String("sasl.password", "", "sasl.password")
 )
 
 const dateTimeFormat = "20060102150405"
@@ -43,8 +47,16 @@ func main() {
 		panic("end time should be greater than start time")
 	}
 
-	c := kafkaTool.NewReplayConsumer(*bootstrapServers, *topic, start, end)
+	var c *kafkaTool.ReplayConsumer
+
+	if *saslUser != "" || *saslPass != "" {
+		c = kafkaTool.NewSASLReplayConsumer(*bootstrapServers, *topic, start, end, *saslProtocol, *saslMechanism, *saslUser, *saslPass)
+	} else {
+		c = kafkaTool.NewReplayConsumer(*bootstrapServers, *topic, start, end)
+	}
+
 	defer c.Close()
+
 	var count int64
 	for m := range c.Read() {
 		log.Printf("topic: %v\tpartition: %d\tmessage: %v", *m.TopicPartition.Topic, m.TopicPartition.Partition, string(m.Value))
