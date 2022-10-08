@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	kafkaTool "github.com/douglarek/kafka-tools"
@@ -19,6 +20,10 @@ var (
 	saslUser         = flag.String("sasl.username", "", "sasl.username")
 	saslPass         = flag.String("sasl.password", "", "sasl.password")
 )
+
+func init() {
+	log.SetOutput(os.Stdout)
+}
 
 const dateTimeFormat = "20060102150405"
 
@@ -59,7 +64,7 @@ func main() {
 
 	var count int64
 	for m := range c.Read() {
-		log.Printf("topic: %v\tpartition: %d\tmessage: %v", *m.TopicPartition.Topic, m.TopicPartition.Partition, string(m.Value))
+		log.Printf("topic: %v\tpartition: %d\tkey: %s\tvalue: %s", *m.TopicPartition.Topic, m.TopicPartition.Partition, m.Key, m.Value)
 		count++
 	}
 	log.Println("total count:", count)

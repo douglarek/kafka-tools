@@ -15,7 +15,7 @@ type ReplayConsumer struct {
 	partitionNum int
 }
 
-func newReplayConsumer(brokers, topic string, start, end time.Time, config *kafka.ConfigMap) *ReplayConsumer {
+func newReplayConsumer(topic string, start, end time.Time, config *kafka.ConfigMap) *ReplayConsumer {
 	c, err := kafka.NewConsumer(config)
 	if err != nil {
 		panic(err)
@@ -42,7 +42,7 @@ func NewReplayConsumer(brokers, topic string, start, end time.Time) *ReplayConsu
 		"enable.partition.eof":            true,
 	}
 
-	return newReplayConsumer(brokers, topic, start, end, config)
+	return newReplayConsumer(topic, start, end, config)
 }
 
 func NewSASLReplayConsumer(brokers, topic string, start, end time.Time, saslProtocol, saslMechanism, saslUser, saslPass string) *ReplayConsumer {
@@ -58,7 +58,7 @@ func NewSASLReplayConsumer(brokers, topic string, start, end time.Time, saslProt
 		"sasl.password":                   saslPass,
 	}
 
-	return newReplayConsumer(brokers, topic, start, end, config)
+	return newReplayConsumer(topic, start, end, config)
 }
 
 func (consumer *ReplayConsumer) offsetsForTimes(partitions []kafka.TopicPartition, timestamp int64) ([]kafka.TopicPartition, error) {
@@ -96,44 +96,41 @@ func (consumer *ReplayConsumer) Read() <-chan *kafka.Message {
 	go func() {
 		defer close(ch)
 	LOOP:
-		for {
-			select {
-			case ev := <-consumer.c.Events():
-				switch e := ev.(type) {
-				case kafka.AssignedPartitions:
-					p := e.Partitions
-					if len(p) == 0 {
-						log.Println("No partitions assigned")
-						break LOOP
-					}
-					consumer.partitionNum = len(e.Partitions)
-
-					log.Printf("Assigned/Re-assigned Partitions: %s\n", consumer.partitionNumbers(p))
-					p, err := consumer.offsetsForTimes(e.Partitions, consumer.start.UnixNano()/int64(time.Millisecond))
-					if err != nil {
-						log.Printf("Trying to reset offsets to timestamp error: %v\n", err)
-						break LOOP
-					}
-
-					consumer.c.Assign(p)
-				case kafka.RevokedPartitions:
-					consumer.c.Unassign()
-				case *kafka.Message:
-					if e.Timestamp.After(consumer.end) {
-						continue
-					}
-					ch <- e
-				case kafka.PartitionEOF: // no more messages
-					ends++
-					if ends < consumer.partitionNum {
-						continue
-					} else {
-						break LOOP
-					}
-				case kafka.Error:
-					log.Printf("Kafka error: %v\n", e)
+		for ev := range consumer.c.Events() {
+			switch e := ev.(type) {
+			case kafka.AssignedPartitions:
+				p := e.Partitions
+				if len(p) == 0 {
+					log.Println("No partitions assigned")
 					break LOOP
 				}
+				consumer.partitionNum = len(e.Partitions)
+
+				log.Printf("Assigned/Re-assigned Partitions: %s\n", consumer.partitionNumbers(p))
+				p, err := consumer.offsetsForTimes(e.Partitions, consumer.start.UnixNano()/int64(time.Millisecond))
+				if err != nil {
+					log.Printf("Trying to reset offsets to timestamp error: %v\n", err)
+					break LOOP
+				}
+
+				consumer.c.Assign(p)
+			case kafka.RevokedPartitions:
+				consumer.c.Unassign()
+			case *kafka.Message:
+				if e.Timestamp.After(consumer.end) {
+					continue
+				}
+				ch <- e
+			case kafka.PartitionEOF: // no more messages
+				ends++
+				if ends < consumer.partitionNum {
+					continue
+				} else {
+					break LOOP
+				}
+			case kafka.Error:
+				log.Printf("Kafka error: %v\n", e)
+				break LOOP
 			}
 		}
 	}()
