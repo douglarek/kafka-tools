@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
@@ -82,7 +83,7 @@ func main() {
 			log.Printf("Caught signal %v: terminating\n", sig)
 			run = false
 		default:
-			ev := c.Poll(100)
+			ev := c.Poll(int(*timeout / time.Millisecond))
 			if ev == nil {
 				continue
 			}
