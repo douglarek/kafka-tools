@@ -16,6 +16,7 @@ import (
 var (
 	bootstrapServers = flag.String("bootstrap.servers", "", "kafka bootstrap servers")
 	topic            = flag.String("topic", "", "kafka topics to consumer, multiple divided by the comma")
+	groupID          = flag.String("group.id", "a-kafka-consumer", "kafka consumer group id")
 	offset           = flag.String("offset", "latest", "auto.offset.reset")
 	timeout          = flag.Duration("timeout", -1, "consumer timeout")
 	saslProtocol     = flag.String("security.protocol", "sasl_plaintext", "security.protocol")
@@ -32,13 +33,13 @@ func main() {
 
 	flag.Parse()
 
-	if *bootstrapServers == "" || *topic == "" || *offset == "" {
-		panic("both of bootstrap.servers, topic and offset should be not empty")
+	if *bootstrapServers == "" || *topic == "" || *groupID == "" || *offset == "" {
+		panic("both of bootstrap.servers, topic, group.id and offset should be not empty")
 	}
 
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":        *bootstrapServers,
-		"group.id":                 "a-kafka-consumer",
+		"group.id":                 *groupID,
 		"auto.offset.reset":        *offset,
 		"enable.auto.commit":       false, // no need to commit for stream consuming
 		"enable.auto.offset.store": false,
