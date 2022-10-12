@@ -18,6 +18,7 @@ var (
 	topic            = flag.String("topic", "", "kafka topics to consumer, multiple divided by the comma")
 	groupID          = flag.String("group.id", "a-kafka-consumer", "kafka consumer group id")
 	offset           = flag.String("offset", "latest", "auto.offset.reset")
+	autoCommit       = flag.Bool("enable.auto.commit", false, "auto commit or not")
 	timeout          = flag.Duration("timeout", -1, "consumer timeout")
 	saslProtocol     = flag.String("security.protocol", "sasl_plaintext", "security.protocol")
 	saslMechanism    = flag.String("sasl.mechanism", "PLAIN", "sasl.mechanism")
@@ -38,11 +39,10 @@ func main() {
 	}
 
 	cfg := &kafka.ConfigMap{
-		"bootstrap.servers":        *bootstrapServers,
-		"group.id":                 *groupID,
-		"auto.offset.reset":        *offset,
-		"enable.auto.commit":       false, // no need to commit for stream consuming
-		"enable.auto.offset.store": false,
+		"bootstrap.servers":  *bootstrapServers,
+		"group.id":           *groupID,
+		"auto.offset.reset":  *offset,
+		"enable.auto.commit": *autoCommit, // no need to commit for stream consuming
 	}
 	if *saslUser != "" && *saslPass != "" {
 		_ = cfg.SetKey("security.protocol", *saslProtocol)
