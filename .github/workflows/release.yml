@@ -22,11 +22,13 @@ jobs:
           image: douglarek/centos7-golang:latest
           options: -v ${{ github.workspace }}:/work -w /work
           run: |
-            go build -o kafka-replay-centos7-${{ steps.vars.outputs.tag }} cmd/replay/main.go
+            go build -o kafka-producer-centos7-${{ steps.vars.outputs.tag }} cmd/producer/main.go
+            go build -o kafka-consumer-centos7-${{ steps.vars.outputs.tag }} cmd/consumer/main.go
+            go build -o kafka-consumer-replay-centos7-${{ steps.vars.outputs.tag }} cmd/replay/main.go
 
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
-            kafka-replay*
+            kafka-*
