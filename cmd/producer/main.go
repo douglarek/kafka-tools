@@ -34,6 +34,7 @@ func main() {
 
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers": *bootstrapServers,
+		// "enable.idempotence": true, // idempotent producer which provides strict ordering and and exactly-once producer guarantees. see https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md .
 	}
 	if *saslUser != "" && *saslPass != "" {
 		_ = cfg.SetKey("security.protocol", *saslProtocol)
